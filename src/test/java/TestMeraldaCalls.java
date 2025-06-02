@@ -9,11 +9,11 @@ import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.openqa.selenium.support.ui.WebDriverWait;
 import org.openqa.selenium.WebDriver;
 
-
+//Meralda calls setup
 public class TestMeraldaCalls {
 
     @Test
-    public void testVideoCallFlow() throws Exception {
+    public void testVideoCallFlow() {
 
         System.out.println("Setting Firefox media preferences...");
         FirefoxOptions options = new FirefoxOptions();
@@ -33,7 +33,7 @@ public class TestMeraldaCalls {
             System.out.println("Navigating to Meralda website...");
             driver.get("https://meralda.scalenext.io/");
             System.out.println("URL opened: " + driver.getCurrentUrl());
-            Assert.assertEquals("https://meralda.scalenext.io/", driver.getCurrentUrl());
+            Assert.assertEquals(driver.getCurrentUrl(), "https://meralda.scalenext.io/");
 
             System.out.println("Waiting and clicking on 'Jewellery'...");
             WebElement jewellery = wait.until(ExpectedConditions.elementToBeClickable(By.xpath("//*[@id=\"homeMainnavBarDrop\"]/div/ul/li[2]/a")));
