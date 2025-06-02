@@ -1,4 +1,4 @@
-name: Run meralda Tests
+name: Run TestNG Tests
 
 on:
   push:
@@ -8,10 +8,10 @@ on:
 
 jobs:
   build:
-    runs-on: macos-latest
+    runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout repository
+      - name: Checkout Repository
         uses: actions/checkout@v4
 
       - name: Set up JDK 17
@@ -20,8 +20,12 @@ jobs:
           distribution: 'temurin'
           java-version: '17'
 
-      - name: Install dependencies
-        run: mvn install -DskipTests
+      - name: Install Firefox and xvfb
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y firefox xvfb
 
-      - name: Run TestNG tests
-        run: mvn clean test
+      - name: Run Tests
+        run: |
+          cd Testng_maven
+          xvfb-run --auto-servernum --server-args='-screen 0 1920x1080x24' mvn clean test
