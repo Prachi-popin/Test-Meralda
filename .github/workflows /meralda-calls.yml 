@@ -1,6 +1,7 @@
 name: Run TestNG Tests
 
 on:
+  workflow_dispatch:
   push:
     branches: [ MyNewBranch1 ]
   pull_request:

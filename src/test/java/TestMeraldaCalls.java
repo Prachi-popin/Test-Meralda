@@ -13,7 +13,7 @@ import org.openqa.selenium.WebDriver;
 public class TestMeraldaCalls {
 
     @Test
-    public void testVideoCallFlow() throws Exception  {
+    public void testVideoCallFlow() throws Exception {
 
         System.out.println("Setting Firefox media preferences...");
         FirefoxOptions options = new FirefoxOptions();
