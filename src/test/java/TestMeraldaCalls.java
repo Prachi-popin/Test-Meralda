@@ -1,4 +1,6 @@
 import org.testng.annotations.Test;
+
+import java.nio.file.StandardOpenOption;
 import java.time.Duration;
 import org.testng.Assert;
 import org.openqa.selenium.*;
@@ -8,12 +10,42 @@ import org.openqa.selenium.interactions.Actions;
 import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.openqa.selenium.support.ui.WebDriverWait;
 import org.openqa.selenium.WebDriver;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.nio.file.Path;
 
-//Meralda calls setup
 public class TestMeraldaCalls {
+    WebDriver driver;
 
-    @Test
-    public void testVideoCallFlow() {
+    @Test(priority = 1)
+    public void testVideoCallFlow() throws InterruptedException {
+
+        Path readyFlag = Paths.get("/tmp/ready_for_call.flag");
+        Path callStartedFlag = Paths.get("/tmp/call_started.flag");
+        Path sellerJoinedFlag = Paths.get("/tmp/seller_joined.flag");
+
+        try {
+            Files.deleteIfExists(callStartedFlag);
+            Files.deleteIfExists(sellerJoinedFlag);
+        } catch (Exception e) {
+            System.out.println("⚠️ Couldn't clear old flags: " + e.getMessage());
+        }
+
+        // ⏳ Wait for Script 2 to indicate it's ready
+        System.out.println("⏳ Waiting for seller script to be ready (ready_for_call.flag)...");
+        int waitForReady = 60;
+        boolean isReady = false;
+        for (int i = 0; i < waitForReady; i++) {
+            if (Files.exists(readyFlag)) {
+                System.out.println("✅ Seller script is ready.");
+                isReady = true;
+                break;
+            }
+            Thread.sleep(1000);
+        }
+        if (!isReady) {
+            throw new RuntimeException("Timeout: Seller script not ready.");
+        }
 
         System.out.println("Setting Firefox media preferences...");
         FirefoxOptions options = new FirefoxOptions();
@@ -22,7 +54,7 @@ public class TestMeraldaCalls {
         options.addPreference("media.peerconnection.enabled", true);
 
         System.out.println("Launching Firefox driver...");
-        WebDriver driver = new FirefoxDriver(options);
+        driver = new FirefoxDriver(options);
         WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(30));
         Actions actions = new Actions(driver);
 
@@ -139,6 +171,31 @@ public class TestMeraldaCalls {
             driver.switchTo().defaultContent();
             Thread.sleep(3000);
             driver.switchTo().frame(0);
+
+
+// ✅ Create call started flag to notify Script 2
+            Files.write(callStartedFlag, "initiated".getBytes(), StandardOpenOption.CREATE);
+            System.out.println("✅ Call started flag created: " + callStartedFlag.toAbsolutePath());
+
+            // ⏳ Wait for seller to join the call
+            System.out.println("⏳ Waiting for seller to join the call...");
+            int waitSeconds = 60;
+            boolean sellerJoined = false;
+            for (int i = 0; i < waitSeconds; i++) {
+                if (Files.exists(sellerJoinedFlag)) {
+                    System.out.println("✅ Seller joined flag detected.");
+                    sellerJoined = true;
+                    break;
+                }
+                Thread.sleep(1000);
+            }
+
+            if (!sellerJoined) {
+                throw new RuntimeException("Timeout: Seller did not answer call in time.");
+            }
+
+            // Now perform UI assertions or continue the flow
+            System.out.println("Proceeding with video call validations...");
 
             System.out.println("Waiting for call connected UI...");
             WebElement callConnected = wait.until(ExpectedConditions.visibilityOfElementLocated(
