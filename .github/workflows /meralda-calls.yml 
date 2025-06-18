@@ -1,5 +1,4 @@
 name: Meralda Video call
-description: Run tests for Meralda Video call with CodePush on macOS
 
 on:
   workflow_dispatch:
@@ -13,9 +12,17 @@ on:
   pull_request:
     branches: [ MySecondBranch]
 
+    env:
+      API_LEVEL: 33
+      ANDROID_TARGET: google_apis
+      ANDROID_ARCH: x86_64
+      EMULATOR_NAME: test_emulator
+      ANDROID_BUILD_TOOLS_VERSION: 33.0.2
+
 jobs:
   build:
     runs-on: macos-latest
+    timeout-minutes: 30
 
     steps:
       - name: Checkout Repository

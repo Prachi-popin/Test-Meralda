@@ -7,7 +7,7 @@ echo "Running seller-side test (Script 2) first and waiting for customer to init
 mvn test -Dtest=TestReceivingCallsFromPopinSeller &
 
 # Give Script 2 some time to launch and begin waiting
-sleep 10
+sleep 30
 
 echo "Running customer-side test (Script 1) to initiate the call..."
 mvn test -Dtest=TestMeraldaCalls
@@ -20,3 +20,6 @@ else
 fi
 
 echo "🎬 Video call flow test completed."
+
+
+#shellcheck disable=SC1128
