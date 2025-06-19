@@ -33,12 +33,16 @@ jobs:
           echo "no" | avdmanager create avd -n test_emulator -k "system-images;android-33;google_apis;x86_64" -d pixel
           cat ~/.android/avd/test_emulator.avd/config.ini
 
-      - name: 🚀 Start Emulator
+      
+      - name: 🚀 Start Emulator with virtual display
         run: |
-          nohup emulator -avd test_emulator -no-audio -no-boot-anim -no-window -gpu swiftshader_indirect > /dev/null 2>&1 &
+          sudo apt-get update
+          sudo apt-get install -y xvfb
+          nohup xvfb-run emulator -avd test_emulator -no-audio -no-boot-anim -gpu swiftshader_indirect > /dev/null 2>&1 &
           adb wait-for-device
           adb shell 'while [[ -z $(getprop sys.boot_completed) ]]; do sleep 1; done;'
-          echo "✅ Emulator is ready"
+          echo "✅ Emulator booted successfully"
+
 
       - name: 📦 Install Maven dependencies
         run: mvn clean install -DskipTests
