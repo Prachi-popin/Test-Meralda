@@ -28,20 +28,30 @@ jobs:
         run: |
           sdkmanager "platform-tools" "emulator" "platforms;android-33" "system-images;android-33;google_apis;x86_64"
 
-      - name: 📱 Create AVD
+      - name: 🔍 Verify SDK installation
+        run: sdkmanager --list
+
+      - name: 📱 Create AVD (Pixel 5)
         run: |
-          echo "no" | avdmanager create avd -n test_emulator -k "system-images;android-33;google_apis;x86_64" -d pixel
+          echo "no" | avdmanager create avd -n test_emulator -k "system-images;android-33;google_apis;x86_64" -d "pixel_5"
           cat ~/.android/avd/test_emulator.avd/config.ini
 
-      
       - name: 🚀 Start Emulator with virtual display
         run: |
           sudo apt-get update
           sudo apt-get install -y xvfb
-          nohup xvfb-run emulator -avd test_emulator -no-audio -no-boot-anim -gpu swiftshader_indirect > /dev/null 2>&1 &
+          echo "📦 Installed xvfb"
+
+          # Start emulator using xvfb-run
+          echo "📱 Starting emulator in background..."
+          nohup xvfb-run emulator -avd test_emulator -no-audio -no-boot-anim -gpu swiftshader_indirect -no-snapshot > /tmp/emulator.log 2>&1 &
+
+          # Wait a bit and monitor boot process
+          echo "⏳ Waiting for emulator to boot..."
+          sleep 30
           adb wait-for-device
-          adb shell 'while [[ -z $(getprop sys.boot_completed) ]]; do sleep 1; done;'
-          echo "✅ Emulator booted successfully"
+          adb shell 'while [[ $(getprop sys.boot_completed) != 1 ]]; do sleep 5; done;'
+          echo "✅ Emulator booted"
 
 
       - name: 📦 Install Maven dependencies
