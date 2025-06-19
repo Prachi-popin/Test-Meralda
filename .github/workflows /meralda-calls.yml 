@@ -2,7 +2,8 @@ name: Meralda Video Call Flow Test
 
 on:
   push:
-    branches: ["AddingGithubActions"]
+    branches:
+       - AddingGithubActions
   workflow_dispatch:
 
 jobs:
