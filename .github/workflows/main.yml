@@ -36,19 +36,15 @@ jobs:
           echo "no" | avdmanager create avd -n test_emulator -k "system-images;android-33;google_apis;x86_64" -d "pixel_5"
           cat ~/.android/avd/test_emulator.avd/config.ini
 
-      - name: 🚀 Start Emulator with virtual display
+      - name: 🚀 Start Emulator (headless)
         run: |
-          sudo apt-get update
-          sudo apt-get install -y xvfb
-          echo "📦 Installed xvfb"
-
-          # Start emulator using xvfb-run
           echo "📱 Starting emulator in background..."
-          nohup xvfb-run emulator -avd test_emulator -no-audio -no-boot-anim -gpu swiftshader_indirect -no-snapshot > /tmp/emulator.log 2>&1 &
+          nohup emulator -avd test_emulator -no-audio -no-boot-anim -no-window -no-snapshot -no-accel -gpu swiftshader_indirect > /tmp/emulator.log 2>&1 &
+          
+          echo "🪵 Monitoring emulator log:"
+          tail -f /tmp/emulator.log &
 
-          # Wait a bit and monitor boot process
           echo "⏳ Waiting for emulator to boot..."
-          sleep 30
           adb wait-for-device
           adb shell 'while [[ $(getprop sys.boot_completed) != 1 ]]; do sleep 5; done;'
           echo "✅ Emulator booted"
