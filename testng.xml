@@ -2,9 +2,8 @@
 <suite name="Test Suite" preserve-order="true">
     <test name="Video Call Flow Test">
         <classes>
-            <class name="TestReceivingCallsFromPopinSeller" />
-            <class name="TestMeraldaCalls" />
+            <class name="TestReceivingCallsFromPopinSeller"/>
+            <class name="TestMeraldaCalls"/>
         </classes>
     </test>
 </suite>
-

@@ -1,7 +1,7 @@
 import org.testng.annotations.Test;
+import java.io.OutputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
-import java.net.URLEncoder;
 import java.nio.file.StandardOpenOption;
 import java.time.Duration;
 import org.testng.Assert;
@@ -17,6 +17,27 @@ import java.nio.file.Path;
 
 public class TestMeraldaCalls {
     WebDriver driver;
+
+
+//    private void sendSlackNotification(String message) {
+//        try {
+//            String webhookUrl = "https://hooks.slack.com/services/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";
+//            URL url = new URL(webhookUrl);
+//            HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+//            conn.setRequestMethod("POST");
+//            conn.setRequestProperty("Content-Type", "application/json");
+//            conn.setDoOutput(true);
+//            String payload = "{\"text\": \"" + message + "\"}";
+//            try (OutputStream os = conn.getOutputStream()) {
+//                os.write(payload.getBytes());
+//                os.flush();
+//            }
+//            conn.getResponseCode();
+//        } catch (Exception e) {
+//            System.out.println("Failed to send Slack notification: " + e.getMessage());
+//        }
+//    }
+//
 
     @Test(priority = 1)
     public void testVideoCallFlow() throws InterruptedException {
@@ -241,41 +262,15 @@ public class TestMeraldaCalls {
                     By.xpath("//*[@id=\"popin-panel\"]/div/div[3]/div[1]/div/div/div[2]/button")));
             continueBrowsing.click();
 
-            sendTelegramNotification("✅Test run successfully!");
+//            sendSlackNotification("✅ Test Passed: Video call flow completed successfully.");
 
         } catch (Exception e) {
             System.out.println("❌ Test failed: " + e.getMessage());
+//            sendSlackNotification("❌ Test Failed: " + e.getMessage());
             e.printStackTrace();
         } finally {
             System.out.println("Closing browser...");
             driver.quit();
-        }
-    }
-
-    // 📢 Hardcoded Telegram notification method
-    private void sendTelegramNotification(String message) {
-        try {
-            String botToken = "8051881078:AAE1ky4RVDknzNa7qu8LxtCbPGHIfh1LPu8";
-            String chatId = "6907899696";
-
-            String urlString = String.format(
-                    "https://api.telegram.org/bot%s/sendMessage?chat_id=%s&text=%s",
-                    botToken,
-                    chatId,
-                    URLEncoder.encode(message, "UTF-8")
-            );
-
-            HttpURLConnection conn = (HttpURLConnection) new URL(urlString).openConnection();
-            conn.setRequestMethod("GET");
-
-            int responseCode = conn.getResponseCode();
-            if (responseCode == 200) {
-                System.out.println("✅ Telegram notification sent.");
-            } else {
-                System.out.println("❌ Failed to send Telegram message. HTTP response code: " + responseCode);
-            }
-        } catch (Exception ex) {
-            System.out.println("❌ Error while sending Telegram message: " + ex.getMessage());
         }
     }
 }

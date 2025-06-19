@@ -24,9 +24,9 @@ public class TestReceivingCallsFromPopinSeller {
         try {
             UiAutomator2Options options = new UiAutomator2Options();
             options.setPlatformName("Android");
-            options.setPlatformVersion("11");
-            options.setDeviceName("RZ8M40QTTSB");
-            options.setApp("/Users/hverma0608/Developer/TestNG_Maven/apk/Popin-seller.apk");
+            options.setPlatformVersion("13");
+            options.setDeviceName("Pixel_5");
+            options.setApp(System.getProperty("user.dir") + "/apk/app-debug.apk");
             options.setAppPackage("in.popin.seller");
             options.setAppActivity("in.popin.seller.ui.main.MainActivity");
             options.setAutomationName("UiAutomator2");
@@ -141,48 +141,72 @@ public class TestReceivingCallsFromPopinSeller {
                     System.out.println("...still waiting (" + (i + 1) + "s)");
                 }
             }
-
             if (!flagDetected) {
                 throw new RuntimeException("❌ Timeout: Script 1 did not initiate the call within " + maxWaitSeconds + " seconds.");
             }
 
-            // Try to find and click Accept button
-            int retries = 10;
-            boolean accepted = false;
-            for (int i = 0; i < retries; i++) {
-                try {
+//            // Try to find and click Accept button
+//            int retries = 5;
+//            boolean accepted = false;
+//            for (int i = 0; i < retries; i++) {
+//                try {
+//
+//                    // Open Notification Panel with swipe
+//                    final var finger = new PointerInput(PointerInput.Kind.TOUCH, "finger");
+//                    var start = new Point(500, 0);
+//                    var end = new Point(500, 1500);
+//
+//                    var swipe = new Sequence(finger, 1);
+//                    swipe.addAction(finger.createPointerMove(Duration.ofMillis(0), PointerInput.Origin.viewport(), start.getX(), start.getY()));
+//                    swipe.addAction(finger.createPointerDown(PointerInput.MouseButton.LEFT.asArg()));
+//                    swipe.addAction(finger.createPointerMove(Duration.ofMillis(1000), PointerInput.Origin.viewport(), end.getX(), end.getY()));
+//                    swipe.addAction(finger.createPointerUp(PointerInput.MouseButton.LEFT.asArg()));
+//                    driver.perform(Arrays.asList(swipe));
+//
+//                    System.out.println("🔽 Notification panel opened.");
+//
+//                    Thread.sleep(5000);
+//
+//                    WebElement acceptBtn = driver.findElement(AppiumBy.accessibilityId("Accept"));
+//                    acceptBtn.click();
+//                    System.out.println("📞✅ Call accepted.");
+//                    accepted = true;
+//
+//                    // Create the seller_joined.flag to notify Script 1
+//                    Files.write(sellerJoinedFlag.toPath(), "joined".getBytes());
+//                    System.out.println("✅ Seller join flag created at: " + sellerJoinedFlag.getAbsolutePath());
+//                    break;
+//
+//                } catch (Exception e) {
+//                    System.out.println("⏳ Waiting for Accept button... (" + (i + 1) + "/" + retries + ")");
+//                    Thread.sleep(1000);
+//                }
+//            }
+//            if (!accepted) {
+//                System.out.println("❌ 'Accept' button not found after retries.");
+//            }
+            try {
+                // Swipe down notification panel (already in your code)
+                final var finger = new PointerInput(PointerInput.Kind.TOUCH, "finger");
+                var swipe = new Sequence(finger, 1);
+                swipe.addAction(finger.createPointerMove(Duration.ofMillis(0), PointerInput.Origin.viewport(), 500, 0));
+                swipe.addAction(finger.createPointerDown(PointerInput.MouseButton.LEFT.asArg()));
+                swipe.addAction(finger.createPointerMove(Duration.ofMillis(1000), PointerInput.Origin.viewport(), 500, 1500));
+                swipe.addAction(finger.createPointerUp(PointerInput.MouseButton.LEFT.asArg()));
+                driver.perform(Arrays.asList(swipe));
 
-                    // Open Notification Panel with swipe
-                    final var finger = new PointerInput(PointerInput.Kind.TOUCH, "finger");
-                    var start = new Point(500, 0);       // very top center
-                    var end = new Point(500, 1500);      // swipe down
+                Thread.sleep(2000); // Let the notification fully open
 
-                    var swipe = new Sequence(finger, 1);
-                    swipe.addAction(finger.createPointerMove(Duration.ofMillis(0), PointerInput.Origin.viewport(), start.getX(), start.getY()));
-                    swipe.addAction(finger.createPointerDown(PointerInput.MouseButton.LEFT.asArg()));
-                    swipe.addAction(finger.createPointerMove(Duration.ofMillis(1000), PointerInput.Origin.viewport(), end.getX(), end.getY()));
-                    swipe.addAction(finger.createPointerUp(PointerInput.MouseButton.LEFT.asArg()));
-                    driver.perform(Arrays.asList(swipe));
+                // Simulate tap on Accept button using ADB
+                System.out.println("📱 Sending ADB tap command to click Accept...");
+                Runtime.getRuntime().exec("adb shell input tap 749 879");
 
-                    System.out.println("🔽 Notification panel opened.");
+                // Create flag file
+                Files.write(sellerJoinedFlag.toPath(), "joined".getBytes());
+                System.out.println("✅ Seller join flag created at: " + sellerJoinedFlag.getAbsolutePath());
 
-                    WebElement acceptBtn = driver.findElement(AppiumBy.accessibilityId("Accept"));
-                    acceptBtn.click();
-                    System.out.println("📞✅ Call accepted.");
-                    accepted = true;
-
-                    // Create the seller_joined.flag to notify Script 1
-                    Files.write(sellerJoinedFlag.toPath(), "joined".getBytes());
-                    System.out.println("✅ Seller join flag created at: " + sellerJoinedFlag.getAbsolutePath());
-                    break;
-
-                } catch (Exception e) {
-                    System.out.println("⏳ Waiting for Accept button... (" + (i + 1) + "/" + retries + ")");
-                    Thread.sleep(1000);
-                }
-            }
-            if (!accepted) {
-                System.out.println("❌ 'Accept' button not found after retries.");
+            } catch (Exception e) {
+                System.out.println("❌ Failed to tap Accept using ADB: " + e.getMessage());
             }
 
         } catch (NoSuchSessionException nse) {

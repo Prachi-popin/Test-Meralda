@@ -1,18 +1,31 @@
 #!/bin/bash
 
-# Clear previous flag files
-rm -f /tmp/call_started.flag /tmp/seller_joined.flag
+# Step 1: Clear previous flag files
+rm -f /tmp/call_started.flag /tmp/seller_joined.flag /tmp/ready_for_call.flag
+echo "🚀 Starting Appium server..."
+nohup appium --log /tmp/appium.log > /dev/null 2>&1 &
+sleep 10
 
-echo "Running seller-side test (Script 2) first and waiting for customer to initiate the call..."
+echo "📱 Waiting for emulator to boot..."
+adb wait-for-device
+adb shell 'while [[ -z $(getprop sys.boot_completed) ]]; do sleep 1; done;'
+echo "✅ Emulator is fully booted."
+
+echo "🚀 Running seller-side test (Script 2) first..."
 mvn test -Dtest=TestReceivingCallsFromPopinSeller &
 
-# Give Script 2 some time to launch and begin waiting
-sleep 30
+# Step 2: Wait for ready_for_call.flag created by seller-side script
+echo "⏳ Waiting for /tmp/ready_for_call.flag from seller side..."
+while [ ! -f /tmp/ready_for_call.flag ]; do
+    sleep 2
+done
 
-echo "Running customer-side test (Script 1) to initiate the call..."
+echo "✅ Seller is ready for the call. Starting customer-side test (Script 1)..."
+
+# Step 3: Start customer-side test
 mvn test -Dtest=TestMeraldaCalls
 
-# Wait for seller-side confirmation
+# Step 4: Wait and confirm if seller actually joined
 if [ -f /tmp/seller_joined.flag ]; then
   echo "✅ Seller side answered the call successfully!"
 else
@@ -20,6 +33,3 @@ else
 fi
 
 echo "🎬 Video call flow test completed."
-
-
-#shellcheck disable=SC1128
