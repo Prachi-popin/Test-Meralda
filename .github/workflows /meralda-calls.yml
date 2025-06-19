@@ -45,6 +45,7 @@ jobs:
       - name: Run Test Flow with Emulator and Appium
         run: ./run_both.sh
 
+
       - name: Archive Appium Logs (if needed)
         if: always()
         uses: actions/upload-artifact@v4
