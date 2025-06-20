@@ -21,11 +21,12 @@ jobs:
           distribution: 'temurin'
           java-version: '17'
 
-      - name: 📱 Create AVD for Pixel_5
+      - name: 📱 Create AVD for Pixel 5
         run: |
+          export ANDROID_SDK_ROOT=$HOME/Library/Android/sdk
+          export PATH=$ANDROID_SDK_ROOT/cmdline-tools/bin:$PATH
           echo "no" | avdmanager create avd -n pixel5 -k "system-images;android-33;google_apis;x86_64" -d pixel
-        env:
-          ANDROID_SDK_ROOT: $HOME/Library/Android/sdk
+        
 
       - name: 🚀 Start Emulator (macOS)
         run: |
