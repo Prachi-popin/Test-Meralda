@@ -12,41 +12,39 @@ jobs:
     runs-on: macos-latest
 
     steps:
-      - name: Checkout Repo
+      - name: ✅ Checkout repository
         uses: actions/checkout@v4
 
-      - name: Set up Java 17
-        uses: actions/setup-java@v4
+      - name: ☕ Set up Java 17
+        uses: actions/setup-java@v3
         with:
           distribution: 'temurin'
           java-version: '17'
 
-      - name: Set up Android SDK
-        uses: android-actions/setup-android@v3
+      - name: 📦 Set up Android SDK
+        uses: android-actions/setup-android@v2
 
-      - name: Create and Start Android Emulator
+      - name: 📦 Install emulator & system image
+        run: sdkmanager "platform-tools" "emulator" "platforms;android-33" "system-images;android-33;google_apis;x86_64"
+
+      - name: 📱 Create Pixel_5 AVD
+        run: echo "no" | avdmanager create avd -n test_emulator -k "system-images;android-33;google_apis;x86_64" -d pixel_5
+
+      - name: 🚀 Start emulator in background
         run: |
-          echo "Creating AVD..."
-          echo "no" | avdmanager create avd -n testEmu -k "system-images;android-33;google_apis;x86_64" -d pixel_5 --force
-          emulator -avd testEmu -no-audio -no-window -gpu swiftshader_indirect &
+          sudo apt-get update
+          sudo apt-get install -y xvfb
+          nohup xvfb-run $ANDROID_HOME/emulator/emulator -avd test_emulator -no-audio -no-window -gpu swiftshader_indirect > /tmp/emulator.log 2>&1 &
+          sleep 30
           adb wait-for-device
-          adb shell 'while [[ -z $(getprop sys.boot_completed) ]]; do sleep 1; done;'
-          echo "✅ Emulator is ready."
+          adb shell 'while [[ $(getprop sys.boot_completed) != 1 ]]; do sleep 5; done;'
+          echo "✅ Emulator is ready"
 
-      - name: Install Appium
-        run: |
-          npm install -g appium
-          appium -v
+      - name: 🧪 Install Maven dependencies
+        run: mvn clean install -DskipTests
 
-      - name: Make .sh script executable
-        run: chmod +x ./run_both.sh
+      - name: 🔧 Make shell script executable
+        run: chmod +x run_both.sh
 
-      - name: Run Test Flow with Emulator and Appium
+      - name: 🧪 Run both Appium scripts
         run: ./run_both.sh
-
-      - name: Archive Appium Logs (if needed)
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: appium-log
-          path: /tmp/appium.log
