@@ -1,4 +1,4 @@
-name: Meralda Call Automation
+name: Meralda Call Automation (macOS)
 
 on:
   push:
@@ -8,7 +8,7 @@ on:
 
 jobs:
   run-tests:
-    runs-on: ubuntu-latest
+    runs-on: macos-latest
     timeout-minutes: 30
 
     steps:
@@ -21,42 +21,30 @@ jobs:
           distribution: 'temurin'
           java-version: '17'
 
-      - name: 🧰 Install Dependencies
+      - name: 📱 Create AVD for Pixel_5
         run: |
-          sudo apt-get update
-          sudo apt-get install -y unzip wget libvirt-daemon-system qemu-kvm libvirt-clients bridge-utils libpulse0
-          sudo apt-get install -y xvfb
+          echo "no" | avdmanager create avd -n pixel5 -k "system-images;android-33;google_apis;x86_64" -d pixel
+        env:
+          ANDROID_SDK_ROOT: $HOME/Library/Android/sdk
 
-      - name: 📦 Install Android SDK & Tools
+      - name: 🚀 Start Emulator (macOS)
         run: |
-          wget https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip -O cmdline-tools.zip
-          unzip cmdline-tools.zip -d $HOME/cmdline-tools
-          mkdir -p $HOME/android-sdk/cmdline-tools/latest
-          mv $HOME/cmdline-tools/cmdline-tools/* $HOME/android-sdk/cmdline-tools/latest
-
-          echo "export ANDROID_SDK_ROOT=$HOME/android-sdk" >> $GITHUB_ENV
-          echo "export PATH=$HOME/android-sdk/cmdline-tools/latest/bin:$HOME/android-sdk/platform-tools:$HOME/android-sdk/emulator:$PATH" >> $GITHUB_ENV
-
-      - name: 📦 Install Emulator and System Image
-        run: |
-          yes | sdkmanager --sdk_root=$HOME/android-sdk --licenses
-          sdkmanager --sdk_root=$HOME/android-sdk "platform-tools" "emulator" "platforms;android-33" "system-images;android-33;google_apis;x86_64"
-
-      - name: 📱 Create Emulator
-        run: |
-          echo "no" | avdmanager create avd -n test_emulator -k "system-images;android-33;google_apis;x86_64" -d pixel_5 --force
-
-      - name: 🚀 Start Emulator
-        run: |
-          nohup xvfb-run emulator -avd test_emulator -no-audio -no-boot-anim -gpu swiftshader_indirect -no-window > /tmp/emulator.log 2>&1 &
-
-          # Wait for emulator to boot
+          $HOME/Library/Android/sdk/emulator/emulator -avd pixel5 -no-snapshot -no-window -no-audio -gpu host > /tmp/emulator.log 2>&1 &
           echo "⏳ Waiting for emulator to boot..."
           adb wait-for-device
           adb shell 'while [[ $(getprop sys.boot_completed) != 1 ]]; do sleep 5; done;'
           echo "✅ Emulator booted"
+        env:
+          ANDROID_SDK_ROOT: $HOME/Library/Android/sdk
 
-      - name: ⚙️ Set Executable and Run Tests
+      - name: 🚀 Start Appium Server
         run: |
-          chmod +x run_both.sh
-          ./run_both.sh
+          npm install -g appium
+          nohup appium > /tmp/appium.log 2>&1 &
+          sleep 10
+
+      - name: ✅ Make Shell Script Executable
+        run: chmod +x ./run_both.sh
+
+      - name: 🧪 Run Your Test Automation
+        run: ./run_both.sh
