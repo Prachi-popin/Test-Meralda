@@ -1,10 +1,10 @@
-name: Meralda Call Automation (macOS)
+name: Meralda Call Automation
 
 on:
   push:
-    branches: [ AddingGithubActions ]
+    branches: [AddingGithubActions]
   pull_request:
-    branches: [ AddingGithubActions ]
+    branches: [AddingGithubActions]
 
 jobs:
   run-tests:
@@ -12,7 +12,7 @@ jobs:
     timeout-minutes: 30
 
     steps:
-      - name: ✅ Checkout Code
+      - name: ✅ Checkout Repository
         uses: actions/checkout@v4
 
       - name: ☕ Set up Java 17
@@ -21,31 +21,42 @@ jobs:
           distribution: 'temurin'
           java-version: '17'
 
-      - name: 📱 Create AVD for Pixel 5
+      - name: 📦 Install Android SDK Command-line Tools
+        run: |
+          mkdir -p $HOME/Library/Android/sdk/cmdline-tools
+          cd $HOME/Library/Android/sdk/cmdline-tools
+          curl -o commandlinetools.zip https://dl.google.com/android/repository/commandlinetools-mac-9477386_latest.zip
+          unzip commandlinetools.zip -d latest
+          rm commandlinetools.zip
+
+      - name: 📦 Install SDK packages and system image
         run: |
           export ANDROID_SDK_ROOT=$HOME/Library/Android/sdk
-          export PATH=$ANDROID_SDK_ROOT/cmdline-tools/bin:$PATH
-          echo "no" | avdmanager create avd -n pixel5 -k "system-images;android-33;google_apis;x86_64" -d pixel
-        
+          export PATH=$ANDROID_SDK_ROOT/cmdline-tools/latest/bin:$ANDROID_SDK_ROOT/platform-tools:$PATH
+          yes | sdkmanager --licenses
+          sdkmanager "platform-tools" "emulator" "platforms;android-33" "system-images;android-33;google_apis;x86_64"
 
-      - name: 🚀 Start Emulator (macOS)
+      - name: 📱 Create AVD
         run: |
-          $HOME/Library/Android/sdk/emulator/emulator -avd pixel5 -no-snapshot -no-window -no-audio -gpu host > /tmp/emulator.log 2>&1 &
-          echo "⏳ Waiting for emulator to boot..."
+          export ANDROID_SDK_ROOT=$HOME/Library/Android/sdk
+          export PATH=$ANDROID_SDK_ROOT/cmdline-tools/latest/bin:$ANDROID_SDK_ROOT/platform-tools:$PATH
+          echo "no" | avdmanager create avd -n pixel5 -k "system-images;android-33;google_apis;x86_64" -d pixel_5
+
+      - name: 🚀 Start Emulator
+        run: |
+          export ANDROID_SDK_ROOT=$HOME/Library/Android/sdk
+          export PATH=$ANDROID_SDK_ROOT/emulator:$ANDROID_SDK_ROOT/platform-tools:$PATH
+          nohup $ANDROID_SDK_ROOT/emulator/emulator -avd pixel5 -no-window -no-audio -no-boot-anim -gpu swiftshader_indirect > /tmp/emulator.log 2>&1 &
           adb wait-for-device
+          echo "⏳ Waiting for emulator to boot..."
           adb shell 'while [[ $(getprop sys.boot_completed) != 1 ]]; do sleep 5; done;'
           echo "✅ Emulator booted"
-        env:
-          ANDROID_SDK_ROOT: $HOME/Library/Android/sdk
 
-      - name: 🚀 Start Appium Server
-        run: |
-          npm install -g appium
-          nohup appium > /tmp/appium.log 2>&1 &
-          sleep 10
+      - name: 📦 Install Maven dependencies
+        run: mvn clean install -DskipTests
 
-      - name: ✅ Make Shell Script Executable
-        run: chmod +x ./run_both.sh
+      - name: 🔓 Make script executable
+        run: chmod +x run_both.sh
 
-      - name: 🧪 Run Your Test Automation
+      - name: 🚀 Run test script
         run: ./run_both.sh
