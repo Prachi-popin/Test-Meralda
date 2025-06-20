@@ -1,15 +1,15 @@
-name: Meralda Video Call Flow Test
+name: Meralda Call Automation
 
 on:
   push:
-    branches: 
-      - AddingGithubActions
-  workflow_dispatch:
+    branches: [ AddingGithubActions ]
+  pull_request:
+    branches: [ AddingGithubActions ]
 
 jobs:
-  meralda-test:
-    name: Run Emulator + Appium + Dual Script
-    runs-on: macos-latest
+  run-tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
 
     steps:
       - name: ✅ Checkout repository
