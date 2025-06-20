@@ -8,7 +8,7 @@ on:
 
 jobs:
   run-tests:
-    runs-on: macos-latest
+    runs-on: ubuntu-latest
     timeout-minutes: 30
 
     steps:
@@ -21,34 +21,36 @@ jobs:
           distribution: 'temurin'
           java-version: '17'
 
-      - name: 📦 Install Android SDK Command-line Tools
+      - name: 📦 Install Android SDK cmdline-tools
         run: |
-          mkdir -p $HOME/Library/Android/sdk/cmdline-tools
-          cd $HOME/Library/Android/sdk/cmdline-tools
-          curl -o commandlinetools.zip https://dl.google.com/android/repository/commandlinetools-mac-9477386_latest.zip
+          mkdir -p $HOME/android-sdk/cmdline-tools
+          cd $HOME/android-sdk/cmdline-tools
+          curl -o commandlinetools.zip https://dl.google.com/android/repository/commandlinetools-linux-9477386_latest.zip
           unzip commandlinetools.zip -d latest
           rm commandlinetools.zip
 
-      - name: 📦 Install SDK packages and system image
+      - name: 📦 Install SDK packages
         run: |
-          export ANDROID_SDK_ROOT=$HOME/Library/Android/sdk
+          export ANDROID_SDK_ROOT=$HOME/android-sdk
           export PATH=$ANDROID_SDK_ROOT/cmdline-tools/latest/bin:$ANDROID_SDK_ROOT/platform-tools:$PATH
           yes | sdkmanager --licenses
           sdkmanager "platform-tools" "emulator" "platforms;android-33" "system-images;android-33;google_apis;x86_64"
 
       - name: 📱 Create AVD
         run: |
-          export ANDROID_SDK_ROOT=$HOME/Library/Android/sdk
+          export ANDROID_SDK_ROOT=$HOME/android-sdk
           export PATH=$ANDROID_SDK_ROOT/cmdline-tools/latest/bin:$ANDROID_SDK_ROOT/platform-tools:$PATH
-          echo "no" | avdmanager create avd -n pixel5 -k "system-images;android-33;google_apis;x86_64" -d pixel_5
+          echo "no" | avdmanager create avd -n pixel5 -k "system-images;android-33;google_apis;x86_64" -d pixel
 
       - name: 🚀 Start Emulator
         run: |
-          export ANDROID_SDK_ROOT=$HOME/Library/Android/sdk
+          sudo apt-get update
+          sudo apt-get install -y xvfb
+          export ANDROID_SDK_ROOT=$HOME/android-sdk
           export PATH=$ANDROID_SDK_ROOT/emulator:$ANDROID_SDK_ROOT/platform-tools:$PATH
-          nohup $ANDROID_SDK_ROOT/emulator/emulator -avd pixel5 -no-window -no-audio -no-boot-anim -gpu swiftshader_indirect > /tmp/emulator.log 2>&1 &
-          adb wait-for-device
+          nohup xvfb-run emulator -avd pixel5 -no-window -no-audio -no-boot-anim -gpu swiftshader_indirect > /tmp/emulator.log 2>&1 &
           echo "⏳ Waiting for emulator to boot..."
+          adb wait-for-device
           adb shell 'while [[ $(getprop sys.boot_completed) != 1 ]]; do sleep 5; done;'
           echo "✅ Emulator booted"
 
