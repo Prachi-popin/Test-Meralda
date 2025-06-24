@@ -56,3 +56,4 @@ jobs:
 
       - name: 🎬 Run Automated Test (run_both.sh)
         run: ./run_both.sh
+        
