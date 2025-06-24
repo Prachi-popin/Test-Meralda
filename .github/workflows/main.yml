@@ -26,12 +26,19 @@ jobs:
       with:
         api-level: 33
         target: google_apis
-        arch: x86_64                       
-        emulator-options: -no-window -no-audio -no-boot-anim -gpu swiftshader_indirect
+        arch: x86_64
+        emulator-options: -no-window -no-audio -no-boot-anim -gpu swiftshader_indirect -no-snapshot -no-accel
         disable-animations: true
         force-avd-creation: true
         avd-name: test
+        emulator-boot-timeout: 600
+        pre-emulator-launch-script: |
+          echo "Restarting adb and removing known devices"
+          adb kill-server || true
+          adb start-server
+          adb devices
         script: |
           mvn clean install -DskipTests
           chmod +x run_both.sh
           ./run_both.sh
+
