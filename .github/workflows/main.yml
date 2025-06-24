@@ -1,13 +1,10 @@
-name: Meralda Calls Automation
+name: Meralda Video Call Automation
 
 on:
-  workflow_dispatch:
   push:
     branches:
       - AddingGithubActions
-  pull_request:
-    branches:
-      - AddingGithubActions
+  workflow_dispatch:
 
 jobs:
   build:
@@ -17,48 +14,39 @@ jobs:
       - name: ✅ Checkout Repository
         uses: actions/checkout@v4
 
-      - name: ☕ Set up Java 17
+      - name: ☕ Set up JDK 17
         uses: actions/setup-java@v4
         with:
-          distribution: temurin
-          java-version: 17
-
-      - name: 🌐 Set up Firefox
-        uses: browser-actions/setup-firefox@v1
-        with:
-          firefox-version: latest
+          distribution: 'temurin'
+          java-version: '17'
 
       - name: 🧰 Set up Android SDK
         uses: android-actions/setup-android@v2
 
-      - name: 📦 Accept Licenses and Install System Images
+      - name: 📦 Accept Licenses & Install Emulator Tools
         run: |
           yes | sdkmanager --licenses
           sdkmanager "platform-tools" "emulator" "platforms;android-33" "system-images;android-33;google_apis;x86_64"
 
       - name: 📱 Create AVD
-        run: echo "no" | avdmanager create avd -n test_emulator -k "system-images;android-33;google_apis;x86_64" -d pixel
+        run: |
+          echo "no" | avdmanager create avd -n pixel33 -k "system-images;android-33;google_apis;x86_64" -d pixel
 
-      - name: 🚀 Start Emulator with xvfb
-        env:
-          EMULATOR_HEADLESS: true
+      - name: 🚀 Start Emulator Headless
         run: |
           sudo apt-get update
           sudo apt-get install -y xvfb
           echo "📦 Installed xvfb"
 
-          # Start emulator
-          nohup xvfb-run emulator -avd test_emulator -no-audio -no-boot-anim -gpu swiftshader_indirect -no-snapshot -no-snapshot-save > /tmp/emulator.log 2>&1 &
+          nohup xvfb-run emulator -avd pixel33 -no-audio -no-boot-anim -no-snapshot -no-window -gpu swiftshader_indirect > /tmp/emulator.log 2>&1 &
 
-          # Wait for emulator to boot
           echo "⏳ Waiting for emulator to boot..."
           timeout=0
           until adb shell getprop sys.boot_completed | grep -m 1 '1'; do
             sleep 10
             timeout=$((timeout + 10))
             if [ "$timeout" -gt 300 ]; then
-              echo "❌ Emulator boot timed out after 5 minutes"
-              echo "🔍 Emulator log:"
+              echo "❌ Emulator boot timed out"
               cat /tmp/emulator.log
               exit 1
             fi
@@ -68,8 +56,8 @@ jobs:
       - name: 🧪 Install Maven Dependencies
         run: mvn clean install -DskipTests
 
-      - name: 🔐 Make run_both.sh Executable
+      - name: 🔐 Make Shell Script Executable
         run: chmod +x run_both.sh
 
-      - name: 🎬 Run Test Script
+      - name: 🧪 Run Tests
         run: ./run_both.sh
