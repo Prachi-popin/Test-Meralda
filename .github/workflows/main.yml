@@ -1,63 +1,39 @@
-name: Meralda Video Call Automation
+name: Meralda Call Automation
 
 on:
   push:
-    branches:
-      - AddingGithubActions
-  workflow_dispatch:
+    branches: [AddingGithubActions]
+  pull_request:
+    branches: [AddingGithubActions]
 
 jobs:
-  build:
+  test:
     runs-on: ubuntu-latest
+    timeout-minutes: 45
 
     steps:
-      - name: ✅ Checkout Repository
-        uses: actions/checkout@v4
+    - name: Checkout repo
+      uses: actions/checkout@v4
 
-      - name: ☕ Set up JDK 17
-        uses: actions/setup-java@v4
-        with:
-          distribution: 'temurin'
-          java-version: '17'
+    - name: Set up JDK 17
+      uses: actions/setup-java@v4
+      with:
+        distribution: temurin
+        java-version: 17
 
-      - name: 🧰 Set up Android SDK
-        uses: android-actions/setup-android@v2
+    - name: Set up Android SDK
+      uses: android-actions/setup-android@v2
 
-      - name: 📦 Accept Licenses & Install Emulator Tools
-        run: |
-          yes | sdkmanager --licenses
-          sdkmanager "platform-tools" "emulator" "platforms;android-33" "system-images;android-33;google_apis;x86_64"
-
-      - name: 📱 Create AVD
-        run: |
-          echo "no" | avdmanager create avd -n pixel33 -k "system-images;android-33;google_apis;x86_64" -d pixel
-
-      - name: 🚀 Start Emulator Headless
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y xvfb
-          echo "📦 Installed xvfb"
-
-          nohup xvfb-run emulator -avd pixel33 -no-audio -no-boot-anim -no-snapshot -no-window -gpu swiftshader_indirect > /tmp/emulator.log 2>&1 &
-
-          echo "⏳ Waiting for emulator to boot..."
-          timeout=0
-          until adb shell getprop sys.boot_completed | grep -m 1 '1'; do
-            sleep 10
-            timeout=$((timeout + 10))
-            if [ "$timeout" -gt 300 ]; then
-              echo "❌ Emulator boot timed out"
-              cat /tmp/emulator.log
-              exit 1
-            fi
-          done
-          echo "✅ Emulator booted"
-
-      - name: 🧪 Install Maven Dependencies
-        run: mvn clean install -DskipTests
-
-      - name: 🔐 Make Shell Script Executable
-        run: chmod +x run_both.sh
-
-      - name: 🧪 Run Tests
-        run: ./run_both.sh
+    - name: Run Android emulator and tests
+      uses: reactivecircus/android-emulator-runner@v2
+      with:
+        api-level: 33
+        target: google_apis
+        architecture: x86_64
+        emulator-options: >-
+          -no-window -no-audio -no-boot-anim -gpu swiftshader_indirect
+        disable-animations: true
+        script: |
+          mvn clean install -DskipTests
+          chmod +x run_both.sh
+          ./run_both.sh
