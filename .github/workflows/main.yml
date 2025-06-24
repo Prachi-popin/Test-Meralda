@@ -8,7 +8,7 @@ on:
 
 jobs:
   test:
-    runs-on: ubuntu-latest
+    runs-on: macos-latest
     timeout-minutes: 45
 
     steps:
@@ -21,26 +21,27 @@ jobs:
           distribution: temurin
           java-version: 17
 
-      - name: Run Android emulator and tests
-        uses: reactivecircus/android-emulator-runner@v2
-        with:
-          api-level: 33
-          target: google_apis
-          arch: x86_64
-          emulator-options: -no-window -no-audio -no-boot-anim -gpu swiftshader_indirect -no-snapshot -no-accel
-          disable-animations: true
-          force-avd-creation: true
-          avd-name: test
-          emulator-boot-timeout: 600
-          pre-emulator-launch-script: |
-            echo "🔁 Restarting adb and removing known devices"
-            adb kill-server || true
-            adb start-server
-            adb devices
-            sleep 5
-            echo "📡 Waiting for emulator to appear online..."
-            timeout 120s bash -c 'until adb shell getprop sys.boot_completed | grep -m 1 "1"; do sleep 5; done'
-          script: |
-            mvn clean install -DskipTests
-            chmod +x run_both.sh
-            ./run_both.sh
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v2
+
+      - name: Accept licenses and install emulator
+        run: |
+          yes | sdkmanager --licenses
+          sdkmanager "platform-tools" "emulator" "platforms;android-33" "system-images;android-33;google_apis;x86_64"
+
+      - name: Create AVD
+        run: echo "no" | avdmanager create avd -n test -k "system-images;android-33;google_apis;x86_64" -d "pixel"
+
+      - name: Start emulator
+        run: |
+          $ANDROID_SDK_ROOT/emulator/emulator -avd test -no-audio -no-window -no-boot-anim -gpu swiftshader_indirect > /dev/null 2>&1 &
+          echo "⏳ Waiting for emulator to boot..."
+          adb wait-for-device
+          adb shell 'while [[ $(getprop sys.boot_completed) != 1 ]]; do sleep 5; done;'
+          echo "✅ Emulator booted"
+
+      - name: Set executable permission for run_both.sh
+        run: chmod +x run_both.sh
+
+      - name: Run your test script
+        run: ./run_both.sh
