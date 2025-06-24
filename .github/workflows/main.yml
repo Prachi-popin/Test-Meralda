@@ -40,15 +40,29 @@ jobs:
         run: echo "no" | avdmanager create avd -n test_emulator -k "system-images;android-33;google_apis;x86_64" -d pixel
 
       - name: 🚀 Start Emulator with xvfb
+        env:
+          EMULATOR_HEADLESS: true
         run: |
           sudo apt-get update
           sudo apt-get install -y xvfb
           echo "📦 Installed xvfb"
 
-          nohup xvfb-run emulator -avd test_emulator -no-audio -no-boot-anim -gpu swiftshader_indirect -no-snapshot > /tmp/emulator.log 2>&1 &
+          # Start emulator
+          nohup xvfb-run emulator -avd test_emulator -no-audio -no-boot-anim -gpu swiftshader_indirect -no-snapshot -no-snapshot-save > /tmp/emulator.log 2>&1 &
+
+          # Wait for emulator to boot
           echo "⏳ Waiting for emulator to boot..."
-          adb wait-for-device
-          adb shell 'while [[ $(getprop sys.boot_completed) != 1 ]]; do sleep 5; done;'
+          timeout=0
+          until adb shell getprop sys.boot_completed | grep -m 1 '1'; do
+            sleep 10
+            timeout=$((timeout + 10))
+            if [ "$timeout" -gt 300 ]; then
+              echo "❌ Emulator boot timed out after 5 minutes"
+              echo "🔍 Emulator log:"
+              cat /tmp/emulator.log
+              exit 1
+            fi
+          done
           echo "✅ Emulator booted"
 
       - name: 🧪 Install Maven Dependencies
