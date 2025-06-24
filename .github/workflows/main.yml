@@ -21,19 +21,17 @@ jobs:
         distribution: temurin
         java-version: 17
 
-    - name: Set up Android SDK
-      uses: android-actions/setup-android@v2
-
     - name: Run Android emulator and tests
       uses: reactivecircus/android-emulator-runner@v2
       with:
-        api-level: 33
-        target: google_apis
-        architecture: x86_64
-        emulator-options: >-
-          -no-window -no-audio -no-boot-anim -gpu swiftshader_indirect
-        disable-animations: true
-        script: |
-          mvn clean install -DskipTests
-          chmod +x run_both.sh
-          ./run_both.sh
+       api-level: 33
+       target: google_apis
+       arch: x86                
+       emulator-options: -no-window -no-audio -no-boot-anim -gpu swiftshader_indirect
+       disable-animations: true
+       force-avd-creation: true
+       avd-name: test
+       script: |
+        mvn clean install -DskipTests
+        chmod +x run_both.sh
+        ./run_both.sh
