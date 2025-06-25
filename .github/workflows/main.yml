@@ -24,21 +24,32 @@ jobs:
       - name: Set up Android SDK
         uses: android-actions/setup-android@v2
 
-      - name: Accept licenses and install emulator
+      - name: Accept licenses and install tools
         run: |
           yes | sdkmanager --licenses
           sdkmanager "platform-tools" "emulator" "platforms;android-33" "system-images;android-33;google_apis;x86_64"
 
       - name: Create AVD
-        run: echo "no" | avdmanager create avd -n test -k "system-images;android-33;google_apis;x86_64" -d "pixel"
-
-      - name: Start emulator
         run: |
-          $ANDROID_SDK_ROOT/emulator/emulator -avd test -no-audio -no-window -no-boot-anim -gpu swiftshader_indirect > /dev/null 2>&1 &
-          echo "⏳ Waiting for emulator to boot..."
+          echo "no" | avdmanager create avd -n test -k "system-images;android-33;google_apis;x86_64" -d pixel_5
+
+      - name: Cold boot emulator in background
+        run: |
+          $ANDROID_SDK_ROOT/emulator/emulator -avd test -no-window -no-audio -no-boot-anim -gpu host &
+
+      - name: Wait for emulator to boot
+        run: |
           adb wait-for-device
-          adb shell 'while [[ $(getprop sys.boot_completed) != 1 ]]; do sleep 5; done;'
-          echo "✅ Emulator booted"
+          boot_completed=""
+          until [[ "$boot_completed" == "1" ]]; do
+            sleep 5
+            boot_completed=$(adb shell getprop sys.boot_completed | tr -d '\r')
+            echo "Waiting for emulator... boot_completed=$boot_completed"
+          done
+          echo "✅ Emulator is ready."
+
+      - name: Grant necessary permissions
+        run: adb shell pm grant your.package.name android.permission.CAMERA || true
 
       - name: Set executable permission for run_both.sh
         run: chmod +x run_both.sh
