@@ -24,35 +24,44 @@ jobs:
       - name: Set up Android SDK
         uses: android-actions/setup-android@v2
 
-      - name: Accept licenses and install tools
+      - name: Accept SDK licenses and install emulator tools
         run: |
           yes | sdkmanager --licenses
           sdkmanager "platform-tools" "emulator" "platforms;android-33" "system-images;android-33;google_apis;x86_64"
 
       - name: Create AVD
         run: |
-          echo "no" | avdmanager create avd -n test -k "system-images;android-33;google_apis;x86_64" -d pixel_5
+          echo "no" | avdmanager create avd -n test -k "system-images;android-33;google_apis;x86_64" -d pixel
 
-      - name: Cold boot emulator in background
+      - name: Start emulator
         run: |
-          $ANDROID_SDK_ROOT/emulator/emulator -avd test -no-window -no-audio -no-boot-anim -gpu host &
+          echo "Starting emulator..."
+          nohup $ANDROID_SDK_ROOT/emulator/emulator -avd test -no-snapshot -no-window -no-audio -no-boot-anim -gpu host > /tmp/emulator.log 2>&1 &
+          sleep 10
+          adb devices
 
-      - name: Wait for emulator to boot
+      - name: Wait for emulator to boot (timeout 5 min)
         run: |
-          adb wait-for-device
+          echo "Waiting for emulator to boot..."
           boot_completed=""
-          until [[ "$boot_completed" == "1" ]]; do
+          max_attempts=60
+          attempt=1
+          while [[ "$boot_completed" != "1" && $attempt -le $max_attempts ]]; do
             sleep 5
-            boot_completed=$(adb shell getprop sys.boot_completed | tr -d '\r')
-            echo "Waiting for emulator... boot_completed=$boot_completed"
+            boot_completed=$(adb shell getprop sys.boot_completed 2>/dev/null | tr -d '\r')
+            echo "Attempt $attempt: boot_completed=$boot_completed"
+            ((attempt++))
           done
-          echo "✅ Emulator is ready."
 
-      - name: Grant necessary permissions
-        run: adb shell pm grant your.package.name android.permission.CAMERA || true
+          if [[ "$boot_completed" != "1" ]]; then
+            echo "❌ Emulator failed to boot in time. Dumping log:"
+            cat /tmp/emulator.log || true
+            exit 1
+          fi
+          echo "✅ Emulator booted"
 
       - name: Set executable permission for run_both.sh
         run: chmod +x run_both.sh
 
-      - name: Run your test script
+      - name: Run test script
         run: ./run_both.sh
